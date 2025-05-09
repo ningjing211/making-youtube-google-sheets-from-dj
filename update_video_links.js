@@ -6,20 +6,22 @@ const createCsvWriter = require('csv-writer').createObjectCsvWriter;
 const linkContent = fs.readFileSync('link.txt', 'utf8');
 const lines = linkContent.split('\n');
 
-// 创建链接映射
+// 创建链接和文件名映射
 const linkMap = new Map();
+const fileNameMap = new Map();
 for (let i = 0; i < lines.length; i += 3) {
     if (lines[i] && lines[i + 1]) {
         const fileName = lines[i].trim();
         const link = lines[i + 1].trim();
         const id = fileName.split('_')[0];
         linkMap.set(id, link);
+        fileNameMap.set(id, fileName);
     }
 }
 
 // 创建 CSV writer
 const csvWriter = createCsvWriter({
-    path: 'youtube_sheet_with_links.csv',
+    path: 'new.csv',
     header: [
         {id: 'id', title: 'ID'},
         {id: 'status', title: 'Status'},
@@ -34,14 +36,14 @@ const csvWriter = createCsvWriter({
 
 // 读取现有的 CSV 文件
 const records = [];
-fs.createReadStream('youtube_sheet.csv')
+fs.createReadStream('youtube_sheet_with_links-0509205.csv')
     .pipe(csv())
     .on('data', (row) => {
         // 创建新的记录对象
         const record = {
             id: row.ID || '',
             status: row.Status || '',
-            videoFileName: row['Video File Name'] || '',
+            videoFileName: fileNameMap.get(row.ID) || '',
             videoFileLink: linkMap.get(row.ID) || '',
             title: row.Title || '',
             description: row.Description || '',
@@ -54,7 +56,7 @@ fs.createReadStream('youtube_sheet.csv')
         // 写入新的 CSV 文件
         csvWriter.writeRecords(records)
             .then(() => {
-                console.log('已成功更新视频链接！');
+                console.log('已成功更新视频文件名和链接！');
                 console.log(`共处理了 ${records.length} 条记录`);
             })
             .catch(err => {
